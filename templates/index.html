@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSM to DXF Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            height: 80px;
+            width: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .title-section {
+            text-align: left;
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            margin: 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #4CAF50;
+            background: #e8f5e8;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .options-section {
+            margin-bottom: 30px;
+        }
+
+        .options-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        .options-title::before {
+            content: "⚙️";
+            margin-right: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .convert-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+            disabled: false;
+        }
+
+        .convert-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .convert-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e1e5e9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .download-section {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .plan-description {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f0f2ff;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .plan-description small {
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .logo-section {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .title-section {
+                text-align: center;
+            }
+            
+            .logo {
+                height: 60px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-card {
+                padding: 20px;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-section">
+                <img src="/static/logo.png" alt="OSM to DXF Logo" class="logo">
+                <div class="title-section">
+                    <h1>🗺️ OSM to DXF Converter</h1>
+                    <p class="subtitle">Convert OpenStreetMap data to AutoCAD DXF format for architecture and engineering</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-card">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Drop your OSM file here or click to browse</div>
+                <div class="upload-hint">Supports .osm and .xml files (max 100MB)</div>
+                <input type="file" id="fileInput" class="file-input" accept=".osm,.xml">
+            </div>
+
+            <div class="options-section">
+                <h3 class="options-title">Conversion Options</h3>
+                
+                <div class="form-group">
+                    <label class="form-label" for="planType">🏗️ Architecture Plan Type</label>
+                    <select id="planType" class="form-select">
+                        <option value="key-plan">📍 Key Plan (1:2000 scale, simplified, major features only)</option>
+                        <option value="location-plan">🗺️ Location Plan (1:1000 scale, detailed, all features)</option>
+                    </select>
+                    <div class="plan-description" id="planDescription">
+                        <small>📍 <strong>Key Plan:</strong> Clean overview showing buildings, major roads, and street names. Perfect for site context and orientation.</small>
+                    </div>
+                </div>
+            </div>
+
+            <button id="convertBtn" class="convert-btn" disabled>
+                🚀 Convert to DXF
+            </button>
+
+            <div id="progressSection" class="progress-section">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <div id="progressText" class="progress-text">Preparing conversion...</div>
+                
+                <div id="statusMessage" class="status-message status-info" style="display: none;"></div>
+                
+                <div id="statsGrid" class="stats-grid" style="display: none;"></div>
+            </div>
+
+            <div id="downloadSection" class="download-section">
+                <a id="downloadBtn" class="download-btn" href="#" download>
+                    ⬇️ Download DXF File
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with ❤️ using Flask, PyOsmium, and ezdxf</p>
+        </div>
+    </div>
+
+    <script>
+        let currentJobId = null;
+        let selectedFile = null;
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const statusMessage = document.getElementById('statusMessage');
+        const downloadSection = document.getElementById('downloadSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const planType = document.getElementById('planType');
+        const planDescription = document.getElementById('planDescription');
+        const statsGrid = document.getElementById('statsGrid');
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        convertBtn.addEventListener('click', startConversion);
+        planType.addEventListener('change', updatePlanDescription);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            // Validate file type
+            const allowedTypes = ['.osm', '.xml'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!allowedTypes.includes(fileExtension)) {
+                showStatus('Please select a valid OSM file (.osm or .xml)', 'error');
+                return;
+            }
+
+            // Validate file size (100MB)
+            if (file.size > 100 * 1024 * 1024) {
+                showStatus('File too large. Maximum size is 100MB.', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            updateUploadArea(file.name);
+            convertBtn.disabled = false;
+        }
+
+        function updateUploadArea(filename) {
+            uploadArea.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <div class="upload-text">File selected: ${filename}</div>
+                <div class="upload-hint">Click to select a different file</div>
+            `;
+        }
+
+        function startConversion() {
+            if (!selectedFile) {
+                showStatus('Please select a file first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('projection', 'EPSG:3857'); // Default Web Mercator
+            formData.append('plan_type', planType.value);
+
+            convertBtn.disabled = true;
+            progressSection.style.display = 'block';
+            downloadSection.style.display = 'none';
+            
+            updateProgress(0, 'Uploading file...');
+
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                currentJobId = data.job_id;
+                showStatus('File uploaded successfully. Starting conversion...', 'info');
+                pollJobStatus();
+            })
+            .catch(error => {
+                showStatus(`Upload failed: ${error.message}`, 'error');
+                convertBtn.disabled = false;
+                progressSection.style.display = 'none';
+            });
+        }
+
+        function pollJobStatus() {
+            if (!currentJobId) return;
+
+            fetch(`/api/status/${currentJobId}`)
+            .then(response => response.json())
+            .then(data => {
+                updateProgress(data.progress, data.message);
+                
+                if (data.status === 'completed') {
+                    showStatus('Conversion completed successfully!', 'success');
+                    showStats(data.stats);
+                    showDownload(data.download_url);
+                    convertBtn.disabled = false;
+                } else if (data.status === 'error') {
+                    showStatus(`Conversion failed: ${data.error}`, 'error');
+                    convertBtn.disabled = false;
+                } else {
+                    // Continue polling
+                    setTimeout(pollJobStatus, 1000);
+                }
+            })
+            .catch(error => {
+                showStatus(`Status check failed: ${error.message}`, 'error');
+                convertBtn.disabled = false;
+            });
+        }
+
+        function updateProgress(progress, message) {
+            progressFill.style.width = `${progress}%`;
+            progressText.textContent = `${progress}% - ${message}`;
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+        }
+
+        function showStats(stats) {
+            if (!stats) return;
+            
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.nodes?.toLocaleString() || 0}</div>
+                    <div class="stat-label">Nodes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.ways?.toLocaleString() || 0}</div>
+                    <div class="stat-label">Ways</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.layers || 0}</div>
+                    <div class="stat-label">Layers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${formatFileSize(stats.file_size)}</div>
+                    <div class="stat-label">File Size</div>
+                </div>
+            `;
+            
+            statsGrid.innerHTML = statsHtml;
+            statsGrid.style.display = 'grid';
+        }
+
+        function showDownload(downloadUrl) {
+            downloadBtn.href = downloadUrl;
+            downloadSection.style.display = 'block';
+        }
+
+        function updatePlanDescription() {
+            const planDescriptions = {
+                'key-plan': '📍 <strong>Key Plan:</strong> Clean overview showing buildings, major roads, and street names. Perfect for site context and orientation.',
+                'location-plan': '🗺️ <strong>Location Plan:</strong> Detailed view with all roads, footpaths, buildings, and features. Ideal for detailed site analysis and planning.'
+            };
+            
+            planDescription.innerHTML = `<small>${planDescriptions[planType.value]}</small>`;
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
