@@ -1,0 +1,5 @@
+ezdxf>=1.0.0
+osmium>=3.6.0
+pyproj>=3.4.0
+Flask>=2.3.0
+Flask-CORS>=4.0.0
